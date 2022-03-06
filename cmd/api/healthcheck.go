@@ -33,7 +33,6 @@ func (a *application) healthcheckHandler(w http.ResponseWriter, r *http.Request)
 	err := a.writeJson(w, http.StatusOK, envelop{"health_status": data}, nil)
 	// If there was a error, we log it and send the client a generic error message
 	if err != nil {
-		a.logger.Println(err)
-		http.Error(w, "Server encountered a problem", http.StatusInternalServerError)
+		a.serverErrorResponse(w, r, err)
 	}
 }
