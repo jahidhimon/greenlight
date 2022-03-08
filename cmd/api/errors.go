@@ -5,6 +5,12 @@ import (
 	"net/http"
 )
 
+func (app *application) badRequestResponse(w http.ResponseWriter,
+	r *http.Request, err error) {
+	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+}
+
+
 // Generic logger for this application.
 // TODO: Upgrade this to log request information including http method and URL
 func (app *application) logError(r *http.Request, err error) {
@@ -39,13 +45,13 @@ func(app *application) serverErrorResponse(w http.ResponseWriter, r *http.Reques
 // The notFoundResponse() method will be used to send a 404 not found status code
 // and JSON response to the client
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
-	message := fmt.Sprintf("The requested resource could not be found\n")
+	message := "The requested resource could not be found"
 	app.errorResponse(w, r, http.StatusNotFound, message)
 }
 
 // The methodNotAllowedResponse() method will be used to send a 404 not found status code
 // and JSON response to the client
 func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
-	message := fmt.Sprintf("The %s method is not supported for this resourse\n", r.Method)
+	message := fmt.Sprintf("The %s method is not supported for this resource\n", r.Method)
 	app.errorResponse(w, r, http.StatusMethodNotAllowed, message)
 } 
