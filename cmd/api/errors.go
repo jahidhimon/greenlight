@@ -10,6 +10,9 @@ func (app *application) badRequestResponse(w http.ResponseWriter,
 	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
 }
 
+func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
+	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
+}
 
 // Generic logger for this application.
 // TODO: Upgrade this to log request information including http method and URL
@@ -18,9 +21,9 @@ func (app *application) logError(r *http.Request, err error) {
 }
 
 // The errorResponse() method is a generic helper for sending JSON-formatteed error
-// messages to the client with a given status code. Note that we're using an interface()
-// type for the message parameter, rather than just a string type, as this gives us
-// Moer flexibility over the values that we can include in the response
+// messages to the client with a given status code. Note that we're using an
+// interface() type for the message parameter, rather than just a string type,
+// as it provides flexibility over the values that we can include in the response
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request,
 	status int, message interface{}) {
 	env := envelop{"error": message}
@@ -35,7 +38,7 @@ func (app *application) errorResponse(w http.ResponseWriter, r *http.Request,
 // The serverErrorResponse() method will be used when our application encounters an
 // runtime Error. It logs the detailed error message, then uses the  errorResponse()
 // helper to send a 500 Internal Server Error Code and JSON response to the client
-func(app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.logError(r, err)
 
 	message := "the server encountered a problem and could not process your request"
@@ -54,4 +57,4 @@ func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request)
 func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
 	message := fmt.Sprintf("The %s method is not supported for this resource\n", r.Method)
 	app.errorResponse(w, r, http.StatusMethodNotAllowed, message)
-} 
+}

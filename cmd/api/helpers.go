@@ -145,7 +145,10 @@ func (app *application) readJSON(w http.ResponseWriter,
 	// Call decode again, using a pointer to an empty anonymous struct as the
 	// destination to see if there is any other JSON value in the request body
 	err = decoder.Decode(&struct{}{})
-	if err != nil {
+	
+	// If err is not io.EOF then there are trailing value after that JSON
+	// in the request body. But we don't want any value. So we return Error
+	if !errors.Is(err, io.EOF) {
 		return errors.New("body must only contain a single JSON value")
 	}
 	return nil
