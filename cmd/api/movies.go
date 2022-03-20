@@ -59,9 +59,6 @@ func (a *application) createMovieHandler(w http.ResponseWriter, r *http.Request)
 	fmt.Fprintf(os.Stdout, "%+v\n", movie)
 }
 
-// REVIEW: Add a showMovieHandler for the "GET/v1/movies/:id" endpoint.
-// For now we retrieve the interpolated "id" parameter from the current URL
-// and include it in a placeholder response
 func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil || id < 1 {
@@ -183,17 +180,17 @@ func (app *application) listMovieHandler(w http.ResponseWriter, r *http.Request)
 		Genres []string
 		data.Filters
 	}
-
+	// Add a new validator 
 	v := validator.New()
-
+	// take the entire query string into the qs variable
 	qs := r.URL.Query()
-
+	// read title and genres query value
 	input.Title = app.readString(qs, "title", "")
 	input.Genres = app.readCSV(qs, "genres", []string{})
-
+	// read plage and page_size query value 
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
-
+	// read sort query string
 	input.Filters.Sort = app.readString(qs, "sort", "id")
 
 	input.Filters.SortSafeList = []string{"id", "title", "year", "runtime",
@@ -203,12 +200,12 @@ func (app *application) listMovieHandler(w http.ResponseWriter, r *http.Request)
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
-	movies, err := app.models.Movies.GetAll(input.Title, input.Genres, input.Filters)
+	movies, metadata, err := app.models.Movies.GetAll(input.Title, input.Genres, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, envelope{"movies": movies}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"metadata": metadata, "movies": movies}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
