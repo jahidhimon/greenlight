@@ -26,9 +26,9 @@ func (app *application) logError(r *http.Request, err error) {
 // as it provides flexibility over the values that we can include in the response
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request,
 	status int, message interface{}) {
-	env := envelop{"error": message}
+	env := envelope{"error": message}
 	// Write and send the json to the client using writeJSON() helper and then log it
-	err := app.writeJson(w, status, env, nil)
+	err := app.writeJSON(w, status, env, nil)
 	if err != nil {
 		app.logError(r, err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -57,4 +57,9 @@ func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request)
 func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
 	message := fmt.Sprintf("The %s method is not supported for this resource\n", r.Method)
 	app.errorResponse(w, r, http.StatusMethodNotAllowed, message)
+}
+
+func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
+	message := "unable to update the record due to an edit conflict, please try again"
+	app.errorResponse(w, r, http.StatusConflict, message)
 }

@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/jahidhimon/greenlight.git/internal/validator"
 	"github.com/julienschmidt/httprouter"
 )
 
-type envelop map[string]interface{}
+type envelope map[string]interface{}
 
 // Retrieve the "id" URL parameter from the current request context,
 // then convert it to an integer and return it. On error return 0, error
@@ -36,8 +38,8 @@ func (app *application) readIDParam(r *http.Request) (int64, error) {
 	return id, nil
 }
 
-func (app *application) writeJson(w http.ResponseWriter, status int,
-	data envelop, headers http.Header) error {
+func (app *application) writeJSON(w http.ResponseWriter, status int,
+	data envelope, headers http.Header) error {
 	// Encode the data to json
 	js, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
@@ -52,7 +54,9 @@ func (app *application) writeJson(w http.ResponseWriter, status int,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	
 	w.WriteHeader(status)
+
 	w.Write(js)
 
 	// At this point everything happened correctly
@@ -152,4 +156,37 @@ func (app *application) readJSON(w http.ResponseWriter,
 		return errors.New("body must only contain a single JSON value")
 	}
 	return nil
+}
+
+func (app *application) readString(qs url.Values, key string, defaultValue string) string {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+
+	return s
+}
+
+func (app *application) readCSV(qs url.Values, key string, defaultValue []string) []string {
+	csv := qs.Get(key)
+	if csv == "" {
+		return defaultValue
+	}
+
+	return strings.Split(csv, ",")
+}
+
+func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(key, "Must be an valid integer value")
+		return defaultValue
+	}
+	return i
 }
