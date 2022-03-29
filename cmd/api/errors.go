@@ -17,7 +17,10 @@ func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.
 // Generic logger for this application.
 // TODO: Upgrade this to log request information including http method and URL
 func (app *application) logError(r *http.Request, err error) {
-	app.logger.Println(err)
+	app.logger.PrintInfo(err.Error(), map[string]string{
+		"request_method": r.Method,
+		"request_url": r.URL.String(),
+	})
 }
 
 // The errorResponse() method is a generic helper for sending JSON-formatteed error
@@ -62,4 +65,9 @@ func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.
 func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
 	message := "unable to update the record due to an edit conflict, please try again"
 	app.errorResponse(w, r, http.StatusConflict, message)
+}
+
+func (app *application) rateLimitExcededResponse(w http.ResponseWriter, r *http.Request) {
+	message := "rate limit exceeded"
+	app.errorResponse(w, r, http.StatusTooManyRequests, message)
 }

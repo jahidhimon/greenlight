@@ -4,13 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
-	"log"
-	"net/http"
 	"os"
 	"time"
 
 	"github.com/jahidhimon/greenlight.git/internal/data"
+	"github.com/jahidhimon/greenlight.git/internal/greenlog"
 	_ "github.com/lib/pq"
 )
 
@@ -27,13 +25,18 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  string
 	}
+	limiter struct {
+		rps     float64
+		burst   int
+		enabled bool
+	}
 }
 
 // application struct to hold the dependencies for our
 // HTTP handlers, helpers and middleware
 type application struct {
 	config config
-	logger *log.Logger
+	logger *greenlog.Greenlog
 	models data.Models
 }
 
@@ -50,17 +53,22 @@ func main() {
 		"PostgreSQL max idle connection")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m",
 		"PostgreSQL max connection idle time")
+	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2,
+		"Rate limiter maximum requests per second")
+	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4,
+		"Rate limiter maximum burst")
+	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
 	flag.Parse()
 
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	logger := greenlog.New(os.Stdout, greenlog.LevelInfo)
 
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.Fatal(err)
+		logger.PrintFatal(err, nil)
 	}
 	defer db.Close()
 
-	logger.Printf("database connection pool established")
+	logger.PrintInfo("database connection pool established", nil)
 
 	app := &application{
 		config: cfg,
@@ -68,18 +76,10 @@ func main() {
 		models: data.NewModels(db),
 	}
 
-	// Use the httprouter instance returned by app.routes() as the server handler
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      app.routes(),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
+	err = app.serve()
+	if err != nil {
+		logger.PrintFatal(err, nil)
 	}
-	logger.Printf("starting %s server on %s\n", cfg.env, srv.Addr)
-
-	err = srv.ListenAndServe()
-	logger.Fatal(err)
 }
 
 func openDB(cfg config) (*sql.DB, error) {
