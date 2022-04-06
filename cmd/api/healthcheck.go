@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/jahidhimon/greenlight.git/internal/greenlog"
 )
 
 type healthStatus struct {
@@ -30,6 +28,7 @@ func (a *application) healthcheckHandler(w http.ResponseWriter, r *http.Request)
 		"environment": a.config.env,
 		"version":     version,
 	}
+
 	// Pass the map to the json.Marshal method. It returns a byte slice
 	// containing encoded json
 	err := a.writeJSON(w, http.StatusOK, envelope{"health_status": data}, nil)
@@ -37,5 +36,4 @@ func (a *application) healthcheckHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		a.serverErrorResponse(w, r, err)
 	}
-	greenlog.Logreq(r, "HealthCheck")
 }
