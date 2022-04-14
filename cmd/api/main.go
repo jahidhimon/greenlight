@@ -9,6 +9,8 @@ import (
 
 	"github.com/jahidhimon/greenlight.git/internal/data"
 	"github.com/jahidhimon/greenlight.git/internal/greenlog"
+	"github.com/jahidhimon/greenlight.git/internal/mailer"
+
 	_ "github.com/lib/pq"
 )
 
@@ -30,6 +32,13 @@ type config struct {
 		burst   int
 		enabled bool
 	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 // application struct to hold the dependencies for our
@@ -38,6 +47,7 @@ type application struct {
 	config config
 	logger *greenlog.Greenlog
 	models data.Models
+	mailer mailer.Mailer
 }
 
 func main() {
@@ -45,6 +55,7 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development",
 		"Environment (development/staging/production)")
+
 	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("GREENLIGHT_DB_DSN"),
 		"PostgreSQL DSN")
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25,
@@ -53,11 +64,19 @@ func main() {
 		"PostgreSQL max idle connection")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m",
 		"PostgreSQL max connection idle time")
+
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2,
 		"Rate limiter maximum requests per second")
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4,
 		"Rate limiter maximum burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 25, "SMTP port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "f6ba216c2c45b2", "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "5fe2e2b3196f68", "SMTP password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Greenlight <no-reply@greenlight.jahid.net>", "SMTP sender")
+
 	flag.Parse()
 
 	logger := greenlog.New(os.Stdout, greenlog.LevelInfo)
@@ -74,6 +93,7 @@ func main() {
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
+		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
 
 	err = app.serve()

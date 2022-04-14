@@ -14,6 +14,7 @@ func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }
 
+
 // Generic logger for this application.
 // TODO: Upgrade this to log request information including http method and URL
 func (app *application) logError(r *http.Request, err error) {
